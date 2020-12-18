@@ -55,8 +55,6 @@ class AppointmentController {
                 locale: pt,
             });
 
-            // const formatHour = format(hour, "'hh:mm'")
-
             const appointment = new Appointment({
                 date: newDate,
                 hour,
