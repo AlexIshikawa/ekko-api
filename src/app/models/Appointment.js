@@ -8,6 +8,13 @@ const AppointmentSchema = new mongoose.Schema(
             type: Date,
             required: true,
         },
+        hour: {
+            type: String,
+            required: true,
+        },
+        fullDate: {
+            type: String,
+        },
         address: {
             type: String,
             required: true,

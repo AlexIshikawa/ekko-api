@@ -1,4 +1,5 @@
-import { parseISO, isBefore, startOfHour } from "date-fns";
+import { isBefore, startOfHour, format } from "date-fns";
+import pt from "date-fns/locale/pt";
 
 import Appointment from '../models/Appointment'
 
@@ -20,16 +21,28 @@ class AppointmentController {
 
     async create(req, res, next) {
         try {
-            const { date, address, service } = req.body
+            const { date, hour, address, service } = req.body
 
-            const hourStart = startOfHour(parseISO(date));
+            const newDate = new Date(`${date} ${hour}`)
+            const fullDate = startOfHour(newDate);
 
-            if (isBefore(hourStart, new Date())) {
+            if (isBefore(fullDate, new Date())) {
                 return res.status(400).json({ error: 'Past dates are not permitted' });
-              }
+            }
+
+            const beforeHourAppointment = fullDate.getHours() < 8;
+            const afterHourAppointment = fullDate.getHours() >= 18;
+
+            if(beforeHourAppointment) {
+                return res.status(401).json({ error: 'Appointment is before our working hour.' })
+            }
+
+            if(afterHourAppointment) {
+                return res.status(401).json({ error: 'Appointment is out of hour working hours.' })
+            }
 
             const checkAvailability = await Appointment.findOne({
-                date: hourStart,
+                date: fullDate,
             });
 
             if (checkAvailability) {
@@ -38,17 +51,21 @@ class AppointmentController {
                   .json({ error: 'Appointment date is not available' });
               }
 
-            console.log(date)
+            const formatDate = format(newDate, "'dia' dd 'de' MMMM 'às' HH:mm", {
+                locale: pt,
+            });
+
+            // const formatHour = format(hour, "'hh:mm'")
 
             const appointment = new Appointment({
-                date,
+                date: newDate,
+                hour,
+                fullDate: formatDate,
                 address,
                 service
             })
 
-            // const formatDate = format(hourStart, "'dia' dd 'de' MMMM', às' H:mm'h' ", {
-            //     locale: pt,
-            //   });
+
 
             return appointment.save().then(savedAppointment => res.json({success: true, data: savedAppointment})).catch(err => next(err))
         } catch (error) {
